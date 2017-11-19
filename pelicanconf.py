@@ -19,7 +19,7 @@ TRANSLATION_FEED_ATOM = None
 AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
-THEME = 'pelican-themes/Flex'
+THEME = "pelican-themes/Flex"
 
 # Blogroll
 # LINKS = (('Pelican', 'http://getpelican.com/'),
