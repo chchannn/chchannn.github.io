@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Written with ML and Artificial Foolishness">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chen Chen</title>
+<link href="assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
+<link href="assets/css/ipython.min.css" rel="stylesheet" type="text/css">
+<link href="assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
+<meta name="theme-color" content="#5670d4">
+<meta name="generator" content="Nikola (getnikola.com)">
+<link rel="alternate" type="application/rss+xml" title="RSS" hreflang="en" href="rss.xml">
+<link rel="canonical" href="https://chchannn.github.io/">
+<!--[if lt IE 9]><script src="assets/js/html5.js"></script><![endif]--><link rel="prefetch" href="posts/maximum-mean-discrepancy-for-dummies/" type="text/html">
+</head>
+<body>
+<a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
+
+<!-- Menubar -->
+
+<nav class="navbar navbar-inverse navbar-static-top"><div class="container">
+<!-- This keeps the margins nice -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="https://chchannn.github.io/">
+
+                <span id="blog-title">Chen Chen</span>
+            </a>
+        </div>
+<!-- /.navbar-header -->
+        <div class="collapse navbar-collapse" id="bs-navbar" aria-expanded="false">
+            <ul class="nav navbar-nav">
+<li>
+<a href="https://twitter.com/chchannn">twitter</a>
+                </li>
+<li>
+<a href="https://www.linkedin.com/in/chchennn/">LinkedIn</a>
+                </li>
+<li>
+<a href="archive.html">Archive</a>
+                </li>
+<li>
+<a href="categories/">Tags</a>
+                </li>
+<li>
+<a href="rss.xml">RSS feed</a>
+
+                
+            </li>
+</ul>
+<ul class="nav navbar-nav navbar-right"></ul>
+</div>
+<!-- /.navbar-collapse -->
+    </div>
+<!-- /.container -->
+</nav><!-- End of Menubar --><div class="container" id="content" role="main">
+    <div class="body-content">
+        <!--Body content-->
+        <div class="row">
+            
+            
+
+    
+
+
+    
+<div class="postindex">
+    <article class="h-entry post-text" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title"><a href="posts/maximum-mean-discrepancy-for-dummies/" class="u-url">Maximum Mean Discrepancy for Dummies</a></h1>
+        <div class="metadata">
+            <p class="byline author vcard"><span class="byline-name fn" itemprop="author">
+                Chen Chen
+            </span></p>
+            <p class="dateline">
+            <a href="posts/maximum-mean-discrepancy-for-dummies/" rel="bookmark">
+            <time class="published dt-published" datetime="2021-07-16T20:24:05-07:00" itemprop="datePublished" title="2021-07-16 20:24">2021-07-16 20:24</time></a>
+            </p>
+        </div>
+    </header><div class="e-content entry-content">
+    <div>
+<p>Recently I was working on adding monitoring metrics for my text classification models to detect underlying data drift. Usually it is pretty straightforward to compare two sets of data points to check if they come from the same distribution, when working with structured, tabular inputs. There are many statistical hypothesis testings to measure the distance between two distributions for univariate. When it comes to unstructured text data as inputs, it becomes a more complicated problem. In this scenario I care about the entire vocabulary and how each word's frequency changes. One strategy to measure multivariate drift is using maximum mean discrepancy (MMD), outlined in this paper <a href="https://arxiv.org/abs/1810.11953">Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift</a>. </p>
+<p>Using a "simple" definition, MMD defines an idea of representing distances between distributions as distances between kernel embedding of distributions. I know this is a very confusing sentence. Here, <em>kernel embedding of distributions</em>, which has many nick names including kernel mean, feature mean, mean map, or mean embeddings of features, to simplify this mouthful jargon, is described in <a href="https://en.wikipedia.org/wiki/Kernel_embedding_of_distributions">wikipedia description</a> as</p>
+<blockquote>
+<p>kernel embedding of distributions comprises a class of nonparametric methods in which a probability distribution is represented as an element of a reproducing kernel Hilbert space (RKHS).</p>
+</blockquote>
+<p>When dealing with Hilbert space, I think it is important to keep in mind that, it is simply an extension of the Euclidean space. The Euclidean space, or so called the three-dimensional spaces, or one of those corners of the room that you are in, is an orthogonal space with three perpendicular axes and planes. On the other hand, in the Hilbert space the number of orthogonal axes goes to infinity. The vector operations we like in the Euclidean space such as using inner product, which allows to define distance and angles, are also preserved in the Hilbert space.</p>
+<p>My way to interpret kernel embedding is, like word embedding mapping a word and its semantic meaning to a set of coordinates in an orthogonal space, kernel embedding maps a distribution from domain $\Omega$ (usually non orthogonal) to a set of coordinates in an orthogonal space, so that $k(x,x')=\langle \varphi (x),\varphi (x')\rangle _{\mathcal {H}}$ can be viewed as a measure of similarity between points $x,x'\in \Omega$.
+Remembering that in an orthogonal space, distance and angle measurements are more meaningful since axes are not correlated.</p>
+<p>Empirically we can estimate kernel embedding using $$\mu_{X}=\frac{1}{n}\sum_{i=1}^{n}\varphi (x_{i}),$$ this means, if your features $X$ are orthogonal, such as using principle components after PCA, applying a liner kernel transforming features to themselves, the kernel embedding is simply the mean of each feature, or <code>numpy.mean(X, axis=0)</code>. Kernel embedding are the natural next step in that journey as it provides an orthogonal space to interpret multivariance. It also works seamlessly with dimension reduction methods like PCA.</p>
+<p>Now, circle back to MMD, the goal is to calculate the L2 distance between two kernel embedding, aka two sets of coordinates in the Hilbert space. Recall in vector operations, the L2 distance is defined as </p>
+<div> $$d(X,Y)^{2} = \langle X-Y,X-Y \rangle = \langle X,X \rangle + \langle Y,Y \rangle-2 \langle X,Y \rangle  $$ </div>
+<p>with vector $X, Y \in \mathbb{R}^{n}$ and their inner product as $\langle X,Y \rangle $. 
+hence, MMD between $X$ in $P$ distribution and $Y$ in $Q$ distribution defines as
+$$ 
+MMD^{2}(P,Q)=\langle \mu_{P} , \mu_{P} \rangle -2  \langle \mu_{P} , \mu_{Q} \rangle + \langle \mu_{Q} , \mu_{Q} \rangle$$
+Utilizing a property from RKHS quoting Wikipedia,</p>
+<blockquote>
+<p>the expectation of any function $f$ in the RKHS can be computed as an inner product with the kernel embedding.
+$$\mathbb {E} [f(X)] = \langle f,\mu_{X}\rangle_{\mathcal {H}},$$</p>
+</blockquote>
+<p>we finally arrive a formula that could allow us to estimate MMD using similarity matrix with kernel transform in domain $\Omega$ as
+$$MMD^{2}(P,Q)=E_P[k(X,X)] - 2EP_{Q}[k(X,Y)] + E_Q[k(Y,Y)]$$</p>
+<p>In fact, many existing implementation such as <a href="https://www.kaggle.com/onurtunali/maximum-mean-discrepancy#MAXIMUM-MEAN-DISCREPANCY-(MMD)-IN-MACHINE-LEARNING">here</a> or <a href="https://discuss.pytorch.org/t/maximum-mean-discrepancy-mmd-and-radial-basis-function-rbf/1875">here</a> use the last formula to guide the computing process.</p>
+<p>Once I understood the similarity matrix could be implemented as </p>
+<pre class="code literal-block"><span></span><code># <span class="ss">(</span><span class="nv">x</span> <span class="o">-</span> <span class="nv">y</span><span class="ss">)</span><span class="o">^</span><span class="mi">2</span> <span class="o">=</span> <span class="nv">x</span><span class="o">^</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="nv">x</span><span class="o">*</span><span class="nv">y</span> <span class="o">+</span> <span class="nv">y</span><span class="o">^</span><span class="mi">2</span>
+<span class="nv">def</span> <span class="nv">similarity_matrix</span><span class="ss">(</span><span class="nv">mat</span><span class="ss">)</span>:
+    # <span class="nv">get</span> <span class="nv">the</span> <span class="nv">product</span> <span class="nv">x</span> <span class="o">*</span> <span class="nv">y</span>
+    # <span class="nv">here</span>, <span class="nv">y</span> <span class="o">=</span> <span class="nv">x</span>.<span class="nv">t</span><span class="ss">()</span>
+    <span class="nv">r</span> <span class="o">=</span> <span class="nv">torch</span>.<span class="nv">mm</span><span class="ss">(</span><span class="nv">mat</span>, <span class="nv">mat</span>.<span class="nv">t</span><span class="ss">())</span>
+    # <span class="nv">get</span> <span class="nv">the</span> <span class="nv">diagonal</span> <span class="nv">elements</span>
+    <span class="nv">diag</span> <span class="o">=</span> <span class="nv">r</span>.<span class="nv">diag</span><span class="ss">()</span>.<span class="nv">unsqueeze</span><span class="ss">(</span><span class="mi">0</span><span class="ss">)</span>
+    <span class="nv">diag</span> <span class="o">=</span> <span class="nv">diag</span>.<span class="nv">expand_as</span><span class="ss">(</span><span class="nv">r</span><span class="ss">)</span>
+    # <span class="nv">compute</span> <span class="nv">the</span> <span class="nv">distance</span> <span class="nv">matrix</span>
+    <span class="nv">D</span> <span class="o">=</span> <span class="nv">diag</span> <span class="o">+</span> <span class="nv">diag</span>.<span class="nv">t</span><span class="ss">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="nv">r</span>
+    <span class="k">return</span> <span class="nv">D</span>.<span class="nv">sqrt</span><span class="ss">()</span>
+</code></pre>
+
+<p>everything else seem to be quickly pieced together.</p>
+<p>This has been a very basic explanation to MMD, it aimed to keep things as simple as possible to describe an basic idea. MMD has extensive application in generative learning. Hopefully this article had built up enough appetite for a more detailed elaboration of the topic such as can be found in the original paper <a href="https://www.jmlr.org/papers/volume13/gretton12a/gretton12a.pdf">here</a>.</p>
+</div>
+    </div>
+    </article>
+</div>
+
+
+
+
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" integrity="sha384-3lJUsx1TJHt7BA4udB5KPnDrlkO8T6J6v/op7ui0BbCjvZ9WqV4Xm6DTP6kQ/iBH" crossorigin="anonymous"></script><script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+        displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+        processEscapes: true
+    },
+    displayAlign: 'center', // Change this to 'left' if you want left-aligned equations.
+    "HTML-CSS": {
+        styles: {'.MathJax_Display': {"margin": 0}}
+    }
+});
+</script>
+</div>
+        <!--End of body content-->
+
+        <footer id="footer">
+            Contents © 2021         <a href="mailto:n.tesla@example.com">Chen Chen</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+            
+        </footer>
+</div>
+</div>
+
+
+            <script src="assets/js/all-nocdn.js"></script><!-- fancy dates --><script>
+    moment.locale("en");
+    fancydates(0, "YYYY-MM-DD HH:mm");
+    </script><!-- end fancy dates --><script>
+    baguetteBox.run('div#content', {
+        ignoreClass: 'islink',
+        captions: function(element) {
+            return element.getElementsByTagName('img')[0].alt;
+    }});
+    </script>
+</body>
+</html>
